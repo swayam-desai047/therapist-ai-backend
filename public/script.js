@@ -1,127 +1,195 @@
-// Backend Proxy Server for DeepSeek API Integration
-// This keeps your API key secure on the server side
+// DOM elements
+const chatArea = document.getElementById('chatArea');
+const messageInput = document.getElementById('messageInput');
+const sendButton = document.getElementById('sendButton');
+const typingIndicator = document.getElementById('typingIndicator');
 
-const express = require('express');
-const cors = require('cors');
-const fetch = require('node-fetch'); // npm install node-fetch@2
-require('dotenv').config(); // npm install dotenv
+// State
+let isTyping = false;
+let messageHistory = [];
+const apiEndpoint = '/api/chat';
 
-const app = express();
-const PORT = process.env.PORT || 3001;
+function init() {
+    setupEventListeners();
+    focusInput();
+    autoResize();
+    createParticles();
+}
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+function createParticles() {
+    const particlesContainer = document.getElementById('particles');
+    const particleCount = 50;
+    
+    for (let i = 0; i < particleCount; i++) {
+        setTimeout(() => {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 15 + 's';
+            particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+            particlesContainer.appendChild(particle);
+        }, i * 100);
+    }
+}
 
-// DeepSeek API Configuration
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+function setupEventListeners() {
+    sendButton.addEventListener('click', handleSend);
+    messageInput.addEventListener('input', handleInput);
+    messageInput.addEventListener('keydown', handleKeyDown);
+    messageInput.addEventListener('input', autoResize);
+}
 
-// Chat endpoint
-app.post('/api/chat', async (req, res) => {
+// This function enables/disables the send button
+function handleInput() {
+    const value = messageInput.value.trim();
+    sendButton.disabled = !value || isTyping;
+}
+
+// This function is called when you hit enter or the send button
+async function handleSend() {
+    const message = messageInput.value.trim();
+    if (!message || isTyping) return;
+
+    addMessage(message, 'user');
+    messageInput.value = '';
+    handleInput();
+    autoResize();
+    scrollToBottom();
+    // ... rest of the code
+}
+
+function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+    }
+}
+
+function autoResize() {
+    messageInput.style.height = 'auto';
+    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+}
+
+async function handleSend() {
+    const message = messageInput.value.trim();
+    if (!message || isTyping) return;
+
+    addMessage(message, 'user');
+    messageInput.value = '';
+    handleInput();
+    autoResize();
+    scrollToBottom();
+
+    showTyping();
+
     try {
-        const { message, history } = req.body;
+        const response = await sendToAPI(message);
+        hideTyping();
+        await delay(800);
+        addMessage(response, 'ai');
+    } catch (error) {
+        hideTyping();
+        addMessage('I apologize, but I\'m experiencing technical difficulties. Please try again in a moment.', 'ai');
+        console.error('API Error:', error);
+    }
+}
 
-        if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
-        }
-
-        if (!DEEPSEEK_API_KEY) {
-            return res.status(500).json({ error: 'DeepSeek API key not configured' });
-        }
-
-        // Build prompt with context for DeepSeek
-        const messages = buildDeepSeekPrompt(message, history);
-
-        const requestBody = {
-            model: "deepseek-chat", // Or another DeepSeek model name
-            messages: messages,
-            stream: false
-        };
-
-        // Call DeepSeek API
-        const response = await fetch(DEEPSEEK_API_URL, {
+async function sendToAPI(message) {
+    try {
+        const response = await fetch(apiEndpoint, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify({
+                message: message,
+                history: getRecentHistory()
+            })
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error('DeepSeek API Error:', errorData);
-            return res.status(response.status).json({
-                error: `DeepSeek API Error: ${errorData.error?.message || response.statusText}`
-            });
+            throw new Error(`HTTP ${response.status}`);
         }
 
         const data = await response.json();
-        const aiResponse = data.choices?.[0]?.message?.content;
-        if (!aiResponse) {
-            return res.status(500).json({ error: 'No response generated' });
-        }
-
-        res.json({
-            response: aiResponse.trim(),
-            timestamp: new Date().toISOString()
-        });
-
+        return data.response || 'I understand. Can you tell me more about how you\'re feeling?';
     } catch (error) {
-        console.error('Server Error:', error);
-        res.status(500).json({
-            error: 'Internal server error',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+        console.error('API Error:', error);
+        throw error;
     }
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        deepseekConfigured: !!DEEPSEEK_API_KEY
-    });
-});
-
-// Serve static files (your frontend)
-app.use(express.static('public'));
-
-// Helper function to build DeepSeek prompt
-function buildDeepSeekPrompt(userMessage, history = []) {
-    const messages = [{
-        role: "system",
-        content: `You are a compassionate, professional AI therapist. Your role is to:
-- Listen actively and provide empathetic responses
-- Ask thoughtful, open-ended questions to help users explore their feelings
-- Provide gentle guidance and evidence-based coping strategies
-- Maintain a warm, non-judgmental, and supportive tone
-- Keep responses concise but meaningful (2-4 sentences)
-- Recognize when professional help may be needed and suggest it appropriately`
-    }];
-
-    // Add recent conversation context
-    const recentHistory = history.slice(-5);
-    recentHistory.forEach(msg => {
-        messages.push({
-            role: msg.type === 'user' ? 'user' : 'assistant',
-            content: msg.content
-        });
-    });
-
-    // Add the new user message
-    messages.push({ role: 'user', content: userMessage });
-
-    return messages;
 }
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Therapist AI Backend running on port ${PORT}`);
-    console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🔑 DeepSeek API configured: ${!!DEEPSEEK_API_KEY}`);
-});
+function addMessage(content, type) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message';
+    
+    const timestamp = getTimestamp();
+    const avatar = type === 'ai' ? '🤖' : '👤';
+    const messageClass = type === 'ai' ? 'message-ai' : 'message-user';
+    const avatarClass = type === 'ai' ? 'avatar-ai' : 'avatar-user';
+    
+    messageDiv.innerHTML = `
+        <div class="${messageClass}">
+            <div class="message-avatar ${avatarClass}">${avatar}</div>
+            <div class="message-content">
+                <div class="message-text">${escapeHtml(content)}</div>
+                <div class="message-time">${timestamp}</div>
+            </div>
+        </div>
+    `;
 
-module.exports = app;
+    chatArea.insertBefore(messageDiv, typingIndicator);
+    
+    setTimeout(() => {
+        messageDiv.style.animationDelay = '0s';
+    }, 50);
+
+    messageHistory.push({ content, type, timestamp });
+    scrollToBottom();
+}
+
+function showTyping() {
+    isTyping = true;
+    typingIndicator.classList.add('active');
+    sendButton.disabled = true;
+    scrollToBottom();
+}
+
+function hideTyping() {
+    isTyping = false;
+    typingIndicator.classList.remove('active');
+    handleInput();
+}
+
+function scrollToBottom() {
+    setTimeout(() => {
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }, 100);
+}
+
+function focusInput() {
+    setTimeout(() => messageInput.focus(), 100);
+}
+
+function getTimestamp() {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+function getRecentHistory(limit = 5) {
+    return messageHistory.slice(-limit);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+document.addEventListener('DOMContentLoaded', init);
