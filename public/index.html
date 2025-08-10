@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus AI Therapy</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="bg-animation"></div>
+    <div class="particles" id="particles"></div>
+    <div class="container">
+        <nav class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">🧠</div>
+                <div class="logo-text">Nexus AI</div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-title">Therapy</div>
+                <a href="#" class="nav-item active">
+                    <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                    Current Session
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    Goals & Progress
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                    Wellness Hub
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-title">Resources</div>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    Exercises
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4"/><path d="M9 11V7a3 3 0 0 1 6 0v4"/></svg>
+                    Privacy
+                </a>
+            </div>
+        </nav>
+        <main class="main-content">
+            <header class="chat-header">
+                <div class="session-info">
+                    <h1>AI Therapy Session</h1>
+                    <p>Your safe space for mental wellness and growth</p>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    AI Ready
+                </div>
+            </header>
+            <div class="chat-area" id="chatArea">
+                <div class="message">
+                    <div class="message-ai">
+                        <div class="message-avatar avatar-ai">🤖</div>
+                        <div class="message-content">
+                            <div class="message-text">Hello, I'm your AI therapy companion. I'm here to provide a safe, judgment-free space where you can explore your thoughts and feelings. How are you doing today?</div>
+                            <div class="message-time">just now</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="message-avatar avatar-ai">🤖</div>
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea id="messageInput" class="message-input" placeholder="Share what's on your mind..." rows="1" maxlength="2000"></textarea>
+                        <div class="input-actions">
+                            <button class="action-btn attachment-btn" title="Attach file">
+                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg>
+                            </button>
+                            <button id="sendButton" class="action-btn send-btn" disabled title="Send message">
+                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <button class="fab" title="Emergency Support">
+        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    </button>
+    <script src="script.js"></script>
+</body>
+</html> 
