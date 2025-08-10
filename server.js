@@ -1,11 +1,10 @@
-
-    // Backend Proxy Server for Deepseek API Integration
+// Backend Proxy Server for DeepSeek API Integration
 // This keeps your API key secure on the server side
 
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch'); // npm install node-fetch@2
-require('dotenv').config(); // npm install dotenv
+const fetch = require('node-fetch');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -14,9 +13,10 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Deepseek API Configuration
+// DeepSeek API Configuration
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
     try {
@@ -27,65 +27,42 @@ app.post('/api/chat', async (req, res) => {
         }
 
         if (!DEEPSEEK_API_KEY) {
-            return res.status(500).json({ error: 'Deepseek API key not configured' });
+            return res.status(500).json({ error: 'DeepSeek API key not configured' });
         }
 
-        // Build therapist prompt with context
-        const prompt = buildTherapistPrompt(message, history);
+        // Build prompt with context for DeepSeek
+        const messages = buildDeepSeekPrompt(message, history);
 
-        // Prepare Deepseek API request
         const requestBody = {
-            contents: [{
-                parts: [{
-                    text: prompt
-                }]
-            }],
-            generationConfig: {
-                temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 1024,
-                stopSequences: []
-            },
-            safetySettings: [{
-                category: "HARM_CATEGORY_HARASSMENT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }, {
-                category: "HARM_CATEGORY_HATE_SPEECH",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }, {
-                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }, {
-                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }]
+            model: "deepseek-chat",
+            messages: messages,
+            stream: false
         };
 
-        // Call Deepseek API
-        const response = await fetch(`${DEEPSEEK_API_URL}?key=${DEEPSEEK_API_KEY}`, {
+        // Call DeepSeek API
+        const response = await fetch(DEEPSEEK_API_URL, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
             },
             body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.error('Deepseek API Error:', errorData);
+            console.error('DeepSeek API Error:', errorData);
             return res.status(response.status).json({
-                error: `Deepseek API Error: ${errorData.error?.message || response.statusText}`
+                error: `DeepSeek API Error: ${errorData.error?.message || response.statusText}`
             });
         }
 
         const data = await response.json();
-        const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const aiResponse = data.choices?.[0]?.message?.content;
         if (!aiResponse) {
             return res.status(500).json({ error: 'No response generated' });
         }
 
-        // Return clean response
         res.json({
             response: aiResponse.trim(),
             timestamp: new Date().toISOString()
@@ -112,33 +89,39 @@ app.get('/api/health', (req, res) => {
 // Serve static files (your frontend)
 app.use(express.static('public'));
 
-// Helper function to build therapist prompt
-function buildTherapistPrompt(userMessage, history = []) {
-    // Get recent conversation context (last 5 messages)
-    const recentHistory = history.slice(-5);
-    const contextString = recentHistory
-        .map(msg => `${msg.type === 'user' ? 'User' : 'Therapist'}: ${msg.content}`)
-        .join('\n');
-
-    const prompt = `You are a compassionate, professional AI therapist. Your role is to:
+// Helper function to build DeepSeek prompt
+function buildDeepSeekPrompt(userMessage, history = []) {
+    const messages = [{
+        role: "system",
+        content: `You are a compassionate, professional AI therapist. Your role is to:
 - Listen actively and provide empathetic responses
 - Ask thoughtful, open-ended questions to help users explore their feelings
 - Provide gentle guidance and evidence-based coping strategies
 - Maintain a warm, non-judgmental, and supportive tone
 - Keep responses concise but meaningful (2-4 sentences)
-- Recognize when professional help may be needed and suggest it appropriately
+- Recognize when professional help may be needed and suggest it appropriately`
+    }];
 
-${contextString ? `Previous conversation context:\n${contextString}\n\n` : ''}User's current message: "${userMessage}"
+    // Add recent conversation context
+    const recentHistory = history.slice(-5);
+    recentHistory.forEach(msg => {
+        messages.push({
+            role: msg.type === 'user' ? 'user' : 'assistant',
+            content: msg.content
+        });
+    });
 
-Please respond as a skilled therapist would, focusing on the user's emotional wellbeing:`;
-    return prompt;
+    // Add the new user message
+    messages.push({ role: 'user', content: userMessage });
+
+    return messages;
 }
 
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Therapist AI Backend running on port ${PORT}`);
     console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🔑 Deepseek API configured: ${!!DEEPSEEK_API_KEY}`);
+    console.log(`🔑 DeepSeek API configured: ${!!DEEPSEEK_API_KEY}`);
 });
 
 module.exports = app;
