@@ -1,10 +1,10 @@
-// Backend Proxy Server for DeepSeek API Integration
+// Backend Proxy Server for Llama 3 API Integration
 // This keeps your API key secure on the server side
 
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch');
-require('dotenv').config();
+const fetch = require('node-fetch'); // npm install node-fetch@2
+require('dotenv').config(); // npm install dotenv
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,9 +13,9 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// DeepSeek API Configuration
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+// Llama 3 API Configuration (via Groq)
+const LLAMA3_API_KEY = process.env.LLAMA3_API_KEY;
+const LLAMA3_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
@@ -26,34 +26,34 @@ app.post('/api/chat', async (req, res) => {
             return res.status(400).json({ error: 'Message is required' });
         }
 
-        if (!DEEPSEEK_API_KEY) {
-            return res.status(500).json({ error: 'DeepSeek API key not configured' });
+        if (!LLAMA3_API_KEY) {
+            return res.status(500).json({ error: 'Llama 3 API key not configured' });
         }
 
-        // Build prompt with context for DeepSeek
-        const messages = buildDeepSeekPrompt(message, history);
+        // Build prompt with context for Llama 3
+        const messages = buildLlama3Prompt(message, history);
 
         const requestBody = {
-            model: "deepseek-chat",
+            model: "llama3-8b-8192", // The Llama 3 model name from Groq
             messages: messages,
             stream: false
         };
 
-        // Call DeepSeek API
-        const response = await fetch(DEEPSEEK_API_URL, {
+        // Call Llama 3 API
+        const response = await fetch(LLAMA3_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${LLAMA3_API_KEY}`
             },
             body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.error('DeepSeek API Error:', errorData);
+            console.error('Llama 3 API Error:', errorData);
             return res.status(response.status).json({
-                error: `DeepSeek API Error: ${errorData.error?.message || response.statusText}`
+                error: `Llama 3 API Error: ${errorData.error?.message || response.statusText}`
             });
         }
 
@@ -82,15 +82,15 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        deepseekConfigured: !!DEEPSEEK_API_KEY
+        llama3Configured: !!LLAMA3_API_KEY
     });
 });
 
 // Serve static files (your frontend)
 app.use(express.static('public'));
 
-// Helper function to build DeepSeek prompt
-function buildDeepSeekPrompt(userMessage, history = []) {
+// Helper function to build Llama 3 prompt
+function buildLlama3Prompt(userMessage, history = []) {
     const messages = [{
         role: "system",
         content: `You are a compassionate, professional AI therapist. Your role is to:
@@ -121,7 +121,7 @@ function buildDeepSeekPrompt(userMessage, history = []) {
 app.listen(PORT, () => {
     console.log(`🚀 Therapist AI Backend running on port ${PORT}`);
     console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🔑 DeepSeek API configured: ${!!DEEPSEEK_API_KEY}`);
+    console.log(`🔑 Llama 3 API configured: ${!!LLAMA3_API_KEY}`);
 });
 
 module.exports = app;
