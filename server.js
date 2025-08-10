@@ -1,5 +1,5 @@
- 
-    // Backend Proxy Server for Gemini API Integration
+
+    // Backend Proxy Server for Deepseek API Integration
 // This keeps your API key secure on the server side
 
 const express = require('express');
@@ -14,9 +14,9 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Gemini API Configuration
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Set this in your .env file
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent';
+// Deepseek API Configuration
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
     try {
@@ -26,14 +26,14 @@ app.post('/api/chat', async (req, res) => {
             return res.status(400).json({ error: 'Message is required' });
         }
 
-        if (!GEMINI_API_KEY) {
-            return res.status(500).json({ error: 'Gemini API key not configured' });
+        if (!DEEPSEEK_API_KEY) {
+            return res.status(500).json({ error: 'Deepseek API key not configured' });
         }
 
         // Build therapist prompt with context
         const prompt = buildTherapistPrompt(message, history);
 
-        // Prepare Gemini API request
+        // Prepare Deepseek API request
         const requestBody = {
             contents: [{
                 parts: [{
@@ -62,8 +62,8 @@ app.post('/api/chat', async (req, res) => {
             }]
         };
 
-        // Call Gemini API
-        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        // Call Deepseek API
+        const response = await fetch(`${DEEPSEEK_API_URL}?key=${DEEPSEEK_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -73,9 +73,9 @@ app.post('/api/chat', async (req, res) => {
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.error('Gemini API Error:', errorData);
+            console.error('Deepseek API Error:', errorData);
             return res.status(response.status).json({
-                error: `Gemini API Error: ${errorData.error?.message || response.statusText}`
+                error: `Deepseek API Error: ${errorData.error?.message || response.statusText}`
             });
         }
 
@@ -105,7 +105,7 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        geminiConfigured: !!GEMINI_API_KEY
+        deepseekConfigured: !!DEEPSEEK_API_KEY
     });
 });
 
@@ -138,7 +138,7 @@ Please respond as a skilled therapist would, focusing on the user's emotional we
 app.listen(PORT, () => {
     console.log(`🚀 Therapist AI Backend running on port ${PORT}`);
     console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🔑 Gemini API configured: ${!!GEMINI_API_KEY}`);
+    console.log(`🔑 Deepseek API configured: ${!!DEEPSEEK_API_KEY}`);
 });
 
 module.exports = app;
