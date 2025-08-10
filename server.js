@@ -16,7 +16,6 @@ app.use(express.json());
 // OpenRouter API Configuration
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-// You can set these optional headers in your .env file as well
 const YOUR_SITE_URL = 'https://ai-therapy-backend.onrender.com';
 const YOUR_SITE_NAME = 'Nexus AI Therapy';
 
@@ -33,15 +32,13 @@ app.post('/api/chat', async (req, res) => {
             return res.status(500).json({ error: 'OpenRouter API key not configured' });
         }
 
-        // Build prompt with context for OpenRouter
         const messages = buildOpenRouterPrompt(message, history);
 
         const requestBody = {
-            // "model": "openai/gpt-4o", // You can choose a model here, or OpenRouter will pick a default
+            "model": "openai/gpt-4o", // The model is now specified, fixing the error
             messages: messages
         };
 
-        // Call OpenRouter API
         const response = await fetch(OPENROUTER_API_URL, {
             method: 'POST',
             headers: {
