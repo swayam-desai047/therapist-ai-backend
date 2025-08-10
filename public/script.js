@@ -55,30 +55,6 @@ async function handleSend() {
     handleInput();
     autoResize();
     scrollToBottom();
-    // ... rest of the code
-}
-
-function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
-    }
-}
-
-function autoResize() {
-    messageInput.style.height = 'auto';
-    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
-}
-
-async function handleSend() {
-    const message = messageInput.value.trim();
-    if (!message || isTyping) return;
-
-    addMessage(message, 'user');
-    messageInput.value = '';
-    handleInput();
-    autoResize();
-    scrollToBottom();
 
     showTyping();
 
@@ -92,6 +68,18 @@ async function handleSend() {
         addMessage('I apologize, but I\'m experiencing technical difficulties. Please try again in a moment.', 'ai');
         console.error('API Error:', error);
     }
+}
+
+function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+    }
+}
+
+function autoResize() {
+    messageInput.style.height = 'auto';
+    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
 }
 
 async function sendToAPI(message) {
